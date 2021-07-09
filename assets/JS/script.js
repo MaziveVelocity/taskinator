@@ -5,7 +5,12 @@ var pageContentEl = document.querySelector("#page-content");
 var taskInProgressEl = document.querySelector("#tasks-in-progress");
 var taskCompletedEl = document.querySelector("#tasks-completed");
 
+var tasks = [];
+
+// 
 //handles the main form at the top of the page. 
+// 
+
 var taskFormHandler = function(event) {
   event.preventDefault();
   var taskNameInput = document.querySelector("input[name='task-name']").value;
@@ -14,7 +19,8 @@ var taskFormHandler = function(event) {
   // package up data as an object
   var taskDataObj = {
       name: taskNameInput,
-      type: taskTypeInput
+      type: taskTypeInput,
+      status: "to do"
   };
 
   var isEdit = formEl.hasAttribute("data-task-id");
@@ -30,12 +36,14 @@ var taskFormHandler = function(event) {
       name: taskNameInput,
       type: taskTypeInput
     };
-  
     createTaskEl(taskDataObj);
   }
 };
 
+//
 //creates a task with unique id
+// 
+
 var createTaskEl = function(taskDataObj) {
   var listItemEl = document.createElement("li");
   listItemEl.className = "task-item";
@@ -50,13 +58,21 @@ var createTaskEl = function(taskDataObj) {
 
   var taskActionsEl = createTaskActions(taskIdCounter);
 
-  listItemEl.appendChild(taskActionsEl);
+  
   tasksToDoEl.appendChild(listItemEl);
+  listItemEl.appendChild(taskActionsEl);
+
+  taskDataObj.id = taskIdCounter;
+  tasks.push(taskDataObj);
+  saveTasks();
 
   taskIdCounter++;
 };
 
+// 
 //addes options to task
+// 
+
 var createTaskActions = function(taskId){
   var actionContainerEl = document.createElement("div");
   actionContainerEl.className = "task-actions";
@@ -95,10 +111,29 @@ var createTaskActions = function(taskId){
   return actionContainerEl;
 }
 
+// 
+// Delete task function
+// 
+
 var deleteTask = function(taskId){
   var taskSelected = document.querySelector(".task-item[data-task-id='" + taskId + "']");
   taskSelected.remove();
+
+  var updatedTaskArr = [];
+
+  for (var i = 0; i < tasks.length; i++){
+    if(tasks[i].id !== parseInt(taskId)){
+      updatedTaskArr.push(tasks[i]);
+    }
+  }
+
+  tasks = updatedTaskArr;
+  saveTasks();
 }
+
+// 
+// Edit task fucntion
+// 
 
 var editTask = function(taskId){
   var taskSelected = document.querySelector(".task-item[data-task-id='" + taskId + "']");
@@ -112,6 +147,10 @@ var editTask = function(taskId){
   formEl.setAttribute("data-task-id", taskId);
 }
 
+// 
+// Complete edit function
+// 
+
 var completeEditTask = function(taskName, taskType, taskId) {
   // find the matching task list item
   var taskSelected = document.querySelector(".task-item[data-task-id='" + taskId + "']");
@@ -120,6 +159,15 @@ var completeEditTask = function(taskName, taskType, taskId) {
   taskSelected.querySelector("h3.task-name").textContent = taskName;
   taskSelected.querySelector("span.task-type").textContent = taskType;
 
+  for (var i = 0; i < tasks.length; i++){
+    if (tasks[i].id === parseInt(taskId)){
+      tasks[i].name === taskName;
+      tasks[i].type = taskType;
+    }
+  }
+
+  saveTasks();
+
   alert("Task Updated!");
 
   formEl.removeAttribute("data-task-id");
@@ -127,6 +175,10 @@ var completeEditTask = function(taskName, taskType, taskId) {
 };
 
 formEl.addEventListener("submit", taskFormHandler);
+
+// 
+//Button Handler
+// 
 
 var taskButtonHandler = function(event){
   // get target element from event
@@ -144,6 +196,10 @@ var taskButtonHandler = function(event){
   }
 }
 
+// 
+// Status handler
+// 
+
 var taskStatusChangeHandler = function(event){
   var taskId = event.target.getAttribute("data-task-id");
   var statusValue = event.target.value.toLowerCase();
@@ -156,7 +212,21 @@ var taskStatusChangeHandler = function(event){
   }else if (statusValue === "completed"){
     taskCompletedEl.appendChild(taskSelected);
   }
+
+  saveTasks();
 }
+
+// 
+// Saves task function
+// 
+
+var saveTasks = function(){
+  localStorage.setItem("tasks",JSON.stringify(tasks));
+}
+
+// 
+// Load task function
+// 
 
 pageContentEl.addEventListener("change", taskStatusChangeHandler);
 pageContentEl.addEventListener("click",taskButtonHandler);
